@@ -1,0 +1,169 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>HDR 体验检测测试页</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="bg" aria-hidden="true">
+    <div class="blob b1"></div>
+    <div class="blob b2"></div>
+    <div class="blob b3"></div>
+    <div class="noise"></div>
+  </div>
+
+  <div class="container">
+    <header>
+      <div>
+        <h1 class="title">HDR 体验检测</h1>
+        <p class="subtitle">
+          本页会综合多种信号估算<strong>网页 HDR 体验指数</strong>（偏向“体验能力”而非单纯开关检测）：包含 HDR 输出线索、HDR 视频解码能力、色域等。<br>
+          规则要点：若可判断正在 HDR 输出，则体验指数至少 <strong>60（及格）</strong>；若同时满足<strong>HDR 输出线索 + HDR 视频解码支持</strong>，则体验指数至少 <strong>80（优秀）</strong>。<br>
+          说明：网页无法 100% 证明屏幕正在以 HDR 曲线输出，因此采用“证据强度 + 视觉验证”双轨展示。
+        </p>
+      </div>
+      <div class="chip">
+        <span>检测时间</span>
+        <strong id="time-now">-</strong>
+      </div>
+    </header>
+
+    <div class="grid">
+      <section class="card" aria-label="HDR 体验综合结论">
+        <h2>
+          <span>综合结论</span>
+          <span class="chip"><span>体验指数</span> <strong id="score-text">-</strong></span>
+        </h2>
+
+        <div class="statusHero">
+          <div class="statusIcon" id="status-icon" aria-hidden="true">⏳</div>
+          <div class="statusMain">
+            <div class="statusLine">
+              <span id="status-badge" class="badge unknown">检测中…</span>
+            </div>
+            <p class="statusText" id="status-text">正在收集信号并计算网页 HDR 体验指数…</p>
+
+            <div class="evidenceBarWrap">
+              <div class="evidenceTop">
+                <span id="score-label">HDR 体验指数</span>
+                <span id="score-hint">-</span>
+              </div>
+              <div class="bar" aria-label="体验指数条">
+                <div id="score-bar"></div>
+              </div>
+              <div class="hint" id="reasons-text"></div>
+            </div>
+
+            <div class="hdrProofWrap" aria-label="HDR 视觉验证">
+              <div class="hdrProofTitle">
+                <span>HDR 视觉验证（仅供参考：受浏览器/系统限制）</span>
+                <span class="chip"><span>提示</span><strong>建议全屏</strong></span>
+              </div>
+              <canvas id="hdr-proof" class="hdrProofCanvas" aria-label="HDR only pattern"></canvas>
+              <div class="hint">
+                原理：背景与文字使用略高于 SDR 白点的亮度值。SDR 环境下二者会被裁剪到纯白，文字不可见；HDR 环境下保留亮度差异，文字可见。
+                若看不到文字，不代表一定没 HDR，只代表“此验证在当前链路下未呈现出差异”。
+              </div>
+            </div>
+
+            <div class="actions">
+              <button class="primary" id="btn-copy">复制技术报告</button>
+              <button id="btn-retest">重新检测</button>
+            </div>
+
+            <div class="footer" id="suggestions"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card" aria-label="关键检测项">
+        <h2><span>关键检测项</span><span class="chip"><span>面向非技术用户</span></span></h2>
+        <div class="list" id="signals-list"></div>
+
+        <details>
+          <summary>展开技术细节（JSON / 原始信息）</summary>
+          <div class="mono" id="tech-details">检测中…</div>
+        </details>
+      </section>
+    </div>
+
+    <section class="card" style="margin-top:14px" aria-label="设备与显示信息">
+      <h2><span>设备与显示信息</span><span class="chip"><span>用于辅助判断</span></span></h2>
+      <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div>
+          <div class="kv"><div class="k">CSS 像素分辨率</div><div class="v" id="css-res">-</div></div>
+          <div class="kv"><div class="k">设备像素比（DPR）</div><div class="v" id="dpr">-</div></div>
+          <div class="kv"><div class="k">推算物理分辨率</div><div class="v" id="phy-res">-</div></div>
+          <div class="kv"><div class="k">缩放比例（推算）</div><div class="v" id="scale">-</div></div>
+        </div>
+        <div>
+          <div class="kv"><div class="k">屏幕色深</div><div class="v" id="color-depth">-</div></div>
+          <div class="kv"><div class="k">色域支持</div><div class="v" id="gamut">-</div></div>
+          <div class="kv"><div class="k">CSS HDR（输出线索）</div><div class="v" id="css-hdr">-</div></div>
+          <div class="kv"><div class="k">视频 HDR 查询</div><div class="v" id="video-hdr">-</div></div>
+        </div>
+      </div>
+      <p class="footer">
+        小提示：Windows 一般需要在「设置 → 系统 → 显示」为当前显示器开启 HDR；外接屏请确认线材/接口与显卡输出设置支持 HDR/高位深。
+      </p>
+    </section>
+
+    <details class="card cardDetails" id="visual-card" aria-label="HDR 可视化测试（默认折叠）">
+      <summary>
+        <span class="left">可视化 HDR 测试（肉眼确认）</span>
+        <span class="right chip"><span>建议</span><strong>全屏查看</strong></span>
+      </summary>
+
+      <p class="subtitle" style="margin-top:10px">
+        这些图案不能“强制”让 SDR 变 HDR，但能帮助你观察：是否存在明显裁剪、暗部压扁、广色域是否生效等。<br>
+        最终以系统 HDR 开关状态与显示器 OSD 的 HDR 标识为准。
+      </p>
+
+      <div class="testGrid">
+        <div class="testBox">
+          <div class="testTitle">
+            <span>1) 暗部 → 亮部渐变</span>
+            <span class="chip"><span>观察</span><strong>断层/压扁</strong></span>
+          </div>
+          <p class="testDesc">
+            断层明显：可能位深/抖动不足或系统处理造成；暗部一团黑：可能 SDR/映射问题。
+          </p>
+          <div class="grad" id="grad-main"></div>
+          <div class="clipRow" style="margin-top:10px">
+            <div class="clipBar" id="clip-bar"></div>
+            <div class="sliderWrap">
+              <div class="sliderInfo"><span>亮度强度</span><span id="boost-val">1.00</span></div>
+              <input id="boost" type="range" min="60" max="160" value="100" />
+              <div class="hint">拖动只改变页面图案的视觉对比，用于更容易观察裁剪/细节，不等同真实 HDR 亮度。</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="testBox">
+          <div class="testTitle">
+            <span>2) 高光“白点”层次</span>
+            <span class="chip"><span>观察</span><strong>是否一片白</strong></span>
+          </div>
+          <p class="testDesc">
+            HDR 输出时高光更可能保留层次（并非绝对）。若三者几乎一致白，可能映射/裁剪较重。
+          </p>
+          <div class="whiteSpotWrap">
+            <div class="whiteSpot" style="--spotA:0.45"><div class="spot"></div><label>低强度</label></div>
+            <div class="whiteSpot" style="--spotA:0.70"><div class="spot"></div><label>中强度</label></div>
+            <div class="whiteSpot" style="--spotA:0.95"><div class="spot"></div><label>高强度</label></div>
+          </div>
+          <p class="hint" style="margin-top:10px">
+            若“低/中/高”发光差异不明显，说明高光被压缩/裁剪较严重。
+          </p>
+        </div>
+      </div>
+    </details>
+  </div>
+
+  <div class="toast" id="toast">已复制</div>
+  <script src="script.js"></script>
+</body>
+</html>
